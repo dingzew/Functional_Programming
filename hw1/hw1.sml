@@ -1,3 +1,6 @@
+(* @author: Dingze Wang *)
+(* Functional Programming homework1 *)
+
 (* problem1 is_older *)
 fun is_older (date1: int*int*int, date2: int*int*int) = 
 	let fun countup (num: int*int*int) = 
