@@ -102,8 +102,7 @@ fun oldest (dates : (int * int * int) list) =
     		fun countup (num: int*int*int) = 
 				10000 * (#1 num) + 100 * (#2 num) + (#3 num)
 		in
-			let 
-				val tl_oldest = oldest(tl dates)
+			let val tl_oldest = oldest(tl dates)
     		in 
     			if isSome tl_oldest andalso countup(hd dates) > countup(valOf tl_oldest)
     			then tl_oldest
@@ -126,7 +125,8 @@ fun remove_duplicated_keys(months: int list) =
 		then []
 		else 
 			let val restMonths = remove_duplicated_keys(tl months)
-			in if not (isMember(hd months, restMonths))
+			in 
+				if not (isMember(hd months, restMonths))
 				then hd months :: restMonths
 				else restMonths
 			end 
@@ -203,15 +203,4 @@ fun reasonable_date (date: int*int*int) =
 			if (not (is_valid_date(#1 date, #2 date, #3 date)))
 			then false
 			else true
-
-
-
-
-    	
-
-
-
-
-
-
 
