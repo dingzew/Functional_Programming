@@ -207,9 +207,9 @@ fun careful_player(card_list, goal) =
 				(_, true) => move_list
 				| ([], _) => move_list
 				| (card::cards', false) => 
-					if sum_cards(card_held) < goal - 10 
-	        then strategy(cards', card_held @ [card], move_list @ [Draw])
-	        else if sum_cards(card::card_held) > goal then
+				if sum_cards(card_held) < goal - 10 
+				then strategy(cards', card_held @ [card], move_list @ [Draw])
+				else if sum_cards(card::card_held) > goal then
 					case explore(card, card_held, sum_cards(card_held)) of 
 						[] => move_list
 						|	x::xs' => move_list @ [x] @ xs'	
@@ -217,10 +217,4 @@ fun careful_player(card_list, goal) =
 	in
 		strategy (card_list, [], [])
 	end
-
-
-
-
-
-
 
