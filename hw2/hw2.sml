@@ -199,23 +199,25 @@ fun careful_player(card_list, goal) =
 		fun explore(card, card_held, curr_total) = 
 			case card_held of 
 				[] => []
-				| x::xs' => if curr_total - card_value(x) + card_value(card) = goal then [Discard card, Draw]
+				| x::xs' => if curr_total - card_value(x) + card_value(card) = goal then [Discard x, Draw]
 										else explore(card, xs', curr_total)
 
 		fun strategy (card_stack, card_held, move_list) = 
 			case (card_stack, score_challenge(card_held, goal) = 0) of
 				(_, true) => move_list
 				| ([], _) => move_list
-				| (card::cards', false) => if sum_cards(card_held) < goal - 10 
-																	 then strategy(cards', card_held @ [card], move_list @ [Draw])
-																	 else if sum_cards(card::card_held) > goal then
-																		case explore(card, card_held, sum_cards(card_held)) of 
-																			[] => move_list
-																			|	x::xs' => move_list @ [x] @ xs'	
-																	 else strategy(cards', card_held @ [card], move_list @ [Draw])
+				| (card::cards', false) => 
+					if sum_cards(card_held) < goal - 10 
+	        then strategy(cards', card_held @ [card], move_list @ [Draw])
+	        else if sum_cards(card::card_held) > goal then
+					case explore(card, card_held, sum_cards(card_held)) of 
+						[] => move_list
+						|	x::xs' => move_list @ [x] @ xs'	
+					else strategy(cards', card_held @ [card], move_list @ [Draw])
 	in
 		strategy (card_list, [], [])
 	end
+
 
 
 
