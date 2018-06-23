@@ -73,7 +73,7 @@ fun first_answer f pool =
 	case pool of
 		[] => raise NoAnswer
 		| x :: xs' => case f x of SOME y => y
-									| _ => first_answer f xs'
+			| _ => first_answer f xs'
 
 (* problem 8, find all the answer if all have answer, else NONE *)
 fun all_answers f pool = 
@@ -81,8 +81,8 @@ fun all_answers f pool =
 		case xs of
 			[] => SOME(acc)
 			| x :: xs' => case func x of
-											SOME y => helper (func, xs', acc @ y)
-											| NONE => NONE
+				SOME y => helper (func, xs', acc @ y)
+				| NONE => NONE
 	in
 		helper(f, pool, [])
 	end
@@ -91,9 +91,46 @@ fun all_answers f pool =
 fun count_wildcards p = 
 	g (fn () => 1) (fn x => 0) p
 
-(* problem 9b, *)
+(* problem 9b, wild card and variable string length *)
 fun count_wild_and_variable_lengths p = 
-	
+	g (fn () => 1) (fn x => String.size(x)) p
+
+(* problem 9c, count a certain string match Variable times *)
+fun count_some_var (s, p) = 
+	g (fn () => 0) (fn x => if x = s then 1 else 0) p
+
+(* problem 10, chekc if all the string elements are distinct *)
+fun check_pat p = 
+	let
+		fun all_pattern patt = 
+			case patt of Variable x => [x]
+				| TupleP ps => List.foldl (fn (tmp, acc) => acc @ all_pattern tmp) [] ps
+				| ConstructorP (s, pt) => all_pattern pt
+				| _ => []
+		fun not_duplicate (pool) = 
+			case pool of [] => true
+				| x :: xs' => if List.exists (fn s => s = x) xs' then false else not_duplicate (xs')
+	in
+		not_duplicate(all_pattern p)
+	end
+
+
+(* problem 11, match value and pattern *)
+fun match (value, pattern) = 
+	case (value, pattern) of
+		(_, Wildcard) => SOME []
+		| (v , Variable s) => SOME [(s, v)]
+		| (Unit, UnitP) => SOME []
+		| (Const c, ConstP cp) => if c = cp then SOME[] else NONE
+		| (Constructor (cs, cv), ConstructorP (cps, cp)) => if cs = cps then match(cv, cp) else NONE
+		| (Tuple t, TupleP tp) => if List.length(t) = List.length(tp) then all_answers match (ListPair.zip(t, tp)) else NONE
+		| (_, _) => NONE
+
+
+(* problem 12, find the first match *)
+fun first_match v ps = 
+	SOME(first_answer (fn x => match(v, x)) ps)
+	handle NoAnswer => NONE
 
 
 
