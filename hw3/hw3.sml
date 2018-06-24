@@ -151,7 +151,8 @@ fun first_match v ps =
 (* helper function, find the type given a pattern *)
 fun pattern2type (typ_list, p) = 
 	case p of 
-		Variable _ => Anything
+		Wildcard => Anything
+		| Variable _ => Anything
 		| UnitP => UnitT
 		| ConstP _ => IntT
 		| TupleP tp => TupleT(List.map (fn x => pattern2type (typ_list, x)) tp)
@@ -163,7 +164,6 @@ fun pattern2type (typ_list, p) =
 				case List.find helper typ_list of SOME (_, dtp, _) => Datatype dtp
 					| NONE => raise NoAnswer
 			end
-		| _ => raise NoAnswer
 
 
 (* find the more lenient type between two *)
@@ -187,8 +187,4 @@ fun typecheck_patterns (typ_list, patt_list) =
 			| x :: xs' => SOME (List.foldl find_lenient x xs')
 			handle NoAnswer => NONE
 	end
-
-
-
-
 
