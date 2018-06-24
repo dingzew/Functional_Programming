@@ -133,4 +133,62 @@ fun first_match v ps =
 	handle NoAnswer => NONE
 
 
+(*datatype typ = Anything
+	     | UnitT
+	     | IntT
+	     | TupleT of typ list
+	     | Datatype of string
+*)
+
+(*datatype pattern = Wildcard
+		 | Variable of string
+		 | UnitP
+		 | ConstP of int
+		 | TupleP of pattern list
+		 | ConstructorP of string * pattern*)
+
+(* extra problems *)
+(* helper function, find the type given a pattern *)
+fun pattern2type (typ_list, p) = 
+	case p of 
+		Variable _ => Anything
+		| UnitP => UnitT
+		| ConstP _ => IntT
+		| TupleP tp => TupleT(List.map (fn x => pattern2type (typ_list, x)) tp)
+		| ConstructorP (str, p) => 
+			let fun helper x = 
+				case x of (name, _, patt) => (name = str) andalso ((pattern2type(typ_list, p) = patt)
+					orelse (pattern2type(typ_list, p) = Anything))
+			in
+				case List.find helper typ_list of SOME (_, dtp, _) => Datatype dtp
+					| NONE => raise NoAnswer
+			end
+		| _ => raise NoAnswer
+
+
+(* find the more lenient type between two *)
+fun find_lenient (ty1, ty2) = 
+	if ty1 = ty2 then ty1 else
+	case (ty1, ty2) of
+		(_, Anything) => Anything
+		| (Anything, _) => Anything
+		| (TupleT ttl1, TupleT ttl2) => if List.length(ttl1) = List.length(ttl2) then
+		TupleT(List.map find_lenient (ListPair.zip(ttl1, ttl2))) else raise NoAnswer
+		| (_, _) => raise NoAnswer
+
+(* find if there is a type that matches all the pattern *)
+fun typecheck_patterns (typ_list, patt_list) = 
+	let 
+		val raw_type = List.map (fn x => pattern2type(typ_list, x)) patt_list
+		handle NoAnswer => []
+	in
+		case raw_type of
+			[] => NONE
+			| x :: xs' => SOME (List.foldl find_lenient x xs')
+			handle NoAnswer => NONE
+	end
+
+
+
+
 
