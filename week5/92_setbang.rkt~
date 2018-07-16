@@ -9,7 +9,7 @@
 (define f (lambda (x) (* 1 (+ x b)))) 
 (define c (+ b 4)) 
 (set! b 5)
-;(define z (f 4))   
+(define z (f 4))   
 (define w c)       
 
 ; a safe version of f would make a local copy of b
@@ -19,7 +19,11 @@
     (lambda (x) (* 1 (+ x b)))))
 
 ; but maybe that is not good enough since + and * are also procedures
-
+(define f 
+  (let ([b b]
+        [+ +]
+        [* +])
+    (lambda (x) (* 1 (+ x b)))))
 
 ; it turns out:
 ;  1. this technique doesn't work if f calls a function that itself calls
