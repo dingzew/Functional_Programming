@@ -24,6 +24,18 @@
 
 ;; CHANGE (put your solutions here)
 
+(define (racketlist->mupllist rlist)
+  (if (null? rlist)
+      (aunit)
+      (apair (car rlist) (racketlist->mupllist (cdr rlist)))))
+
+
+(define (mupllist->racketlist mlist)
+  (if (aunit? mlist)
+      null
+      (cons (apair-e1 mlist) (mupllist->racketlist (apair-e2 mlist)))))
+  
+
 ;; Problem 2
 
 ;; lookup a variable in an environment
@@ -40,6 +52,7 @@
 (define (eval-under-env e env)
   (cond [(var? e) 
          (envlookup env (var-string e))]
+        [(int? e) e]
         [(add? e) 
          (let ([v1 (eval-under-env (add-e1 e) env)]
                [v2 (eval-under-env (add-e2 e) env)])
@@ -49,6 +62,42 @@
                        (int-num v2)))
                (error "MUPL addition applied to non-number")))]
         ;; CHANGE add more cases here
+        [(ifgreater? e)
+         (let ([v1 (eval-under-env (ifgreater-e1 e) env)]
+               [v2 (eval-under-env (ifgreater-e2 e) env)]
+               [v3 (eval-under-env (ifgreater-e3 e) env)]
+               [v4 (eval-under-env (ifgreater-e4 e) env)])
+           (if (and (int? v1) (int? v2))
+               (if (> (int-num v1) (int-num v2))
+                   v3
+                   v4)
+               (error "MUPL addition applied to non-number")))]
+        ;[(fun? e)
+         ;(let ([f fun-nameopt e]
+               ;[
+        [(mlet? e)
+         (let ([env (list (cons (mlet-var e) (eval-under-env (mlet-e e) env)))])
+           (eval-under-env (mlet-body e) env))]
+        [(apair? e)
+         (let ([v1 (eval-under-env (apair-e1 e) env)]
+               [v2 (eval-under-env (apair-e2 e) env)])
+           (apair v1 v2))]
+               
+        [(fst? e)
+         (let ([exp (fst-e e)])
+           (if (apair? (eval-under-env exp env))
+           (apair-e1 exp)
+           (error "MUPL first element of pair applied to non-pair")))]
+
+        [(snd? e)
+         (let ([exp (snd-e e)])
+           (if (apair? (eval-under-env exp env))
+           (apair-e2 exp)
+           (error "MUPL first element of pair applied to non-pair")))]
+         
+        
+         
+               
         [#t (error (format "bad MUPL expression: ~v" e))]))
 
 ;; Do NOT change
