@@ -1,4 +1,5 @@
 ;; Programming Languages, Homework 5
+;; author Dingze Wang
 
 #lang racket
 (provide (all-defined-out)) ;; so we can put tests in a second file
@@ -66,12 +67,16 @@
         ;; if e1 > e2, then e3 else e4
         [(ifgreater? e)
          (let ([v1 (eval-under-env (ifgreater-e1 e) env)]
-               [v2 (eval-under-env (ifgreater-e2 e) env)]
-               [v3 (eval-under-env (ifgreater-e3 e) env)]
-               [v4 (eval-under-env (ifgreater-e4 e) env)])
+               [v2 (eval-under-env (ifgreater-e2 e) env)])
            (if (and (int? v1) (int? v2))
-               (if (> (int-num v1) (int-num v2)) v3 v4)
+               (if (> (int-num v1) (int-num v2))
+                   (eval-under-env (ifgreater-e3 e) env)
+                   (eval-under-env (ifgreater-e4 e) env))
                (error "MUPL addition applied to non-number")))]
+        ;; fun
+        [(fun? e) (closure env e)]
+        ;; closure
+        [(closure? e) e]
         ;; bind a value to a var and eval the expression with inside env
         [(mlet? e)
          (let ([env (cons (cons (mlet-var e) (eval-under-env (mlet-e e) env)) env)])
@@ -95,11 +100,8 @@
            (error "MUPL second element of pair applied to non-pair")))]
         ;; isaunit
         [(isaunit? e)
-         (if (aunit? (isaunit-e e)) (int 1) (int 0))]
-        ;; fun
-        [(fun? e) (closure env e)]
-        ;; closure
-        [(closure? e) e]
+         (if (aunit? (eval-under-env (isaunit-e e) env)) (int 1) (int 0))]
+        
         ;; A call evaluates its first and second subexpressions to values. If the first is not a closure, it is an
         ;; error. Else, it evaluates the closure’s function’s body in the closure’s environment extended to map
         ;; the function’s name to the closure (unless the name field is #f) and the function’s argument-name
@@ -110,7 +112,6 @@
          (let ([v1 (eval-under-env (call-funexp e) env)]
                [v2 (eval-under-env (call-actual e) env)])
            (if (closure? v1)
-               ;; (let* ([f (eval-under-env (closure-fun v1) (closure-env v1))]
                (let* ([clo-env (closure-env v1)]
                       [clo-fun (closure-fun v1)]
                       [env-first (cons (cons (fun-formal clo-fun) v2) clo-env)]
