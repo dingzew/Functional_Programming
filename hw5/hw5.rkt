@@ -53,6 +53,7 @@
   (cond [(var? e) 
          (envlookup env (var-string e))]
         [(int? e) e]
+        [(aunit? e) (aunit)]
         [(add? e) 
          (let ([v1 (eval-under-env (add-e1 e) env)]
                [v2 (eval-under-env (add-e2 e) env)])
@@ -62,41 +63,63 @@
                        (int-num v2)))
                (error "MUPL addition applied to non-number")))]
         ;; CHANGE add more cases here
+        ;; if e1 > e2, then e3 else e4
         [(ifgreater? e)
          (let ([v1 (eval-under-env (ifgreater-e1 e) env)]
                [v2 (eval-under-env (ifgreater-e2 e) env)]
                [v3 (eval-under-env (ifgreater-e3 e) env)]
                [v4 (eval-under-env (ifgreater-e4 e) env)])
            (if (and (int? v1) (int? v2))
-               (if (> (int-num v1) (int-num v2))
-                   v3
-                   v4)
+               (if (> (int-num v1) (int-num v2)) v3 v4)
                (error "MUPL addition applied to non-number")))]
-        ;[(fun? e)
-         ;(let ([f fun-nameopt e]
-               ;[
+        ;; bind a value to a var and eval the expression with inside env
         [(mlet? e)
-         (let ([env (list (cons (mlet-var e) (eval-under-env (mlet-e e) env)))])
+         (let ([env (cons (cons (mlet-var e) (eval-under-env (mlet-e e) env)) env)])
            (eval-under-env (mlet-body e) env))]
+        ;; eval apair's two element and cons a new apair
         [(apair? e)
          (let ([v1 (eval-under-env (apair-e1 e) env)]
                [v2 (eval-under-env (apair-e2 e) env)])
            (apair v1 v2))]
-               
+        ;; first element of a apair
         [(fst? e)
-         (let ([exp (fst-e e)])
-           (if (apair? (eval-under-env exp env))
-           (apair-e1 exp)
+         (let ([result (eval-under-env (fst-e e) env)])
+           (if (apair? result)
+           (apair-e1 result)
            (error "MUPL first element of pair applied to non-pair")))]
-
+        ;; second element of a apair
         [(snd? e)
-         (let ([exp (snd-e e)])
-           (if (apair? (eval-under-env exp env))
-           (apair-e2 exp)
-           (error "MUPL first element of pair applied to non-pair")))]
-         
+         (let ([result (eval-under-env (snd-e e) env)])
+           (if (apair? result)
+           (apair-e2 result)
+           (error "MUPL second element of pair applied to non-pair")))]
+        ;; isaunit
+        [(isaunit? e)
+         (if (aunit? (isaunit-e e)) (int 1) (int 0))]
+        ;; fun
+        [(fun? e) (closure env e)]
+        ;; closure
+        [(closure? e) e]
+        ;; A call evaluates its first and second subexpressions to values. If the first is not a closure, it is an
+        ;; error. Else, it evaluates the closure’s function’s body in the closure’s environment extended to map
+        ;; the function’s name to the closure (unless the name field is #f) and the function’s argument-name
+        ;; (i.e., the parameter name) to the result of the second subexpression.
+        ;; (struct closure (env fun) #:transparent)
+        ;; (struct fun  (nameopt formal body) #:transparent) ;; a recursive(?) 1-argument function
+        [(call? e)
+         (let ([v1 (eval-under-env (call-funexp e) env)]
+               [v2 (eval-under-env (call-actual e) env)])
+           (if (closure? v1)
+               ;; (let* ([f (eval-under-env (closure-fun v1) (closure-env v1))]
+               (let* ([clo-env (closure-env v1)]
+                      [clo-fun (closure-fun v1)]
+                      [env-first (cons (cons (fun-formal clo-fun) v2) clo-env)]
+                      [env-final (if (fun-nameopt clo-fun)
+                                    (cons (cons (fun-nameopt clo-fun) v1) env-first)
+                                    env-first)])
+                 (eval-under-env (fun-body clo-fun) env-final))
+               (error (format "bad MUPL expression, not a closure for first argument: ~v" e))))]
         
-         
                
         [#t (error (format "bad MUPL expression: ~v" e))]))
 
@@ -105,20 +128,38 @@
   (eval-under-env e null))
         
 ;; Problem 3
+;; (struct mlet (var e body) #:transparent) ;; a local binding (let var = e in body)
 
-(define (ifaunit e1 e2 e3) "CHANGE")
+(define (ifaunit e1 e2 e3) (ifgreater (isaunit e1) (int 0) e2 e3))
 
-(define (mlet* lstlst e2) "CHANGE")
+(define (mlet* lstlst e2)
+  (if (null? lstlst)
+      e2
+      (mlet (car (car lstlst)) (cdr (car lstlst)) (mlet* (cdr lstlst) e2))))
 
-(define (ifeq e1 e2 e3 e4) "CHANGE")
+(define (ifeq e1 e2 e3 e4)
+  (mlet* (list (cons "x" e1) (cons "y" e2))
+         (ifgreater (var "x") (var "y") e4 (ifgreater (var "y") (var "x") e4 e3))))
+    
 
 ;; Problem 4
 
-(define mupl-map "CHANGE")
+(define mupl-map
+  (fun #f "function"
+       (fun "mapfunc" "mupllst"
+            (ifaunit (var "mupllst")
+                     (aunit)
+                     (apair (call (var "function") (fst (var "mupllst")))
+                            (call (var "mapfunc") (snd (var "mupllst"))))))))
+
 
 (define mupl-mapAddN 
   (mlet "map" mupl-map
-        "CHANGE (notice map is now in MUPL scope)"))
+        (fun #f "increment"
+             (call (var "map")
+                   (fun #f "curnum" (add (var "increment")
+                                         (var "curnum")))))))
+
 
 ;; Challenge Problem
 
